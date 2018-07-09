@@ -6,6 +6,7 @@ import sbsa.interfaces.*;
 import java.util.*;
 import java.io.*;
 import java.net.*;
+import java.sql.SQLException;
 //edit -losh
 public class CRRSClient implements CRRSInterface {
 
@@ -428,6 +429,54 @@ public class CRRSClient implements CRRSInterface {
 			out.flush();
 			ArrayList<Reservation> e = (ArrayList<Reservation>)in.readObject();
 			return e;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	public int getReportCancellations(Date startDate, Date endDate) {
+		try {
+			out.writeObject("getReportCancellations");
+			out.flush();
+
+			out.writeObject(startDate);
+			out.flush();
+			out.writeObject(endDate);
+			out.flush();
+			int e = Integer.parseInt(in.readObject().toString());
+			return e;
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+	
+	public ArrayList<RoomOccupation> getReportRoomOccupation(Date startDate, Date endDate ) {
+		try {
+			out.writeObject("getReportRoomOccupation");
+			out.flush();
+
+			out.writeObject(startDate);
+			out.flush();
+			out.writeObject(endDate);
+			out.flush();
+		
+			return (ArrayList<RoomOccupation>)in.readObject();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	public ArrayList<Equipment> getReportEquipment(Date startDate, Date endDate ) {
+		try {
+			out.writeObject("getReportEquipment");
+			out.flush();
+
+			out.writeObject(startDate);
+			out.flush();
+			out.writeObject(endDate);
+			out.flush();
+		
+			return (ArrayList<Equipment>)in.readObject();
 		} catch (Exception e) {
 			return null;
 		}
