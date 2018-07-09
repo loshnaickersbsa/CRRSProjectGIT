@@ -64,14 +64,14 @@ public class CRRSServer {
 
 
 	}
-	
+
 	class CRRSSockets extends Thread {
 
 
 		private Socket socket;
 		private ObjectOutputStream out = null;
 		private ObjectInputStream in= null;
-		
+
 
 		public CRRSSockets(Socket socket) {
 			this.socket = socket;
@@ -79,12 +79,19 @@ public class CRRSServer {
 		}
 
 		public void run() {
+			String strInput = "";
 			try {
 				out = new ObjectOutputStream(socket.getOutputStream());
 				in = new ObjectInputStream(socket.getInputStream());
-				String strInput = "";
 
+			} catch (IOException e) {
+				System.out.println("Sockets Thread - IOException : " + e.toString());
+			}
+
+			try {
 				while ((strInput =(String)in.readObject()) != "-=!=-") {
+					try {
+					System.out.println("Input: " + strInput);
 					switch(strInput) {
 					case "-=!=-" :
 						System.out.println("\t"+ socket.getInetAddress().getHostAddress() + ":" + socket.getPort() +  " - Closing socket");
@@ -136,12 +143,12 @@ public class CRRSServer {
 
 						String u1 = (String)in.readObject();
 						System.out.println(" inside login u1" + u1);
-						
+
 						String p1 = (String)in.readObject();
 						System.out.println(" inside login" + p1);
 
 						out.writeObject(dao.login(u1,p1));
-						
+
 						break;
 					case "addUser" :
 						out.writeObject(dao.addUser((User)in.readObject()));
@@ -179,25 +186,55 @@ public class CRRSServer {
 					case "findReservationsByDate" :
 						out.writeObject(dao.findReservations((Date)in.readObject(), (Date)in.readObject()));
 						break;
+					case "getReportCancellations" :
+						Date startDate = (Date)in.readObject();
+						Date endDate = (Date)in.readObject();
+					//	out.writeObject(dao.getReportCancellations(startDate, endDate));
+						break;	
 					default :
 						System.out.println("Invalid request : " + strInput);
 						break;
 					}
 					out.flush();
+					} catch (IOException e) {
+						System.out.println("Sockets Thread - IOException : " + e.toString());
+						try {
+							out.writeObject(e);
+						} catch (IOException q) {
+							System.out.println("Sockets Thread Comms Error - " + e.toString());
+						}
+					} catch (ClassNotFoundException e) {
+						System.out.println("Sockets Thread - ClassNotFoundException : " + e.toString());
+						try {
+							out.writeObject(e);
+						} catch (IOException q) {
+							System.out.println("Sockets Thread  Comms Error - " + e.toString());
+						}
+					} catch (SQLException e) {
+						System.out.println("Sockets Thread - SQL Exception : " + e.toString());
+						try {
+							out.writeObject(e);
+						} catch (IOException q) {
+							System.out.println("Sockets Thread  Comms Error - " + e.toString());
+						}
+					} catch (CRRSException e) {
+						System.out.println("Sockets Thread - Bean Error : " + e.toString());
+						try {
+							out.writeObject(e);
+						} catch (IOException q) {
+							System.out.println("Sockets Thread  Comms Error - " + e.toString());
+						}
+					} 
 				}
 				out.close();
 				in.close();
 				socket.close();
-
-			} catch (IOException e) {
+			}catch (IOException e) {
 				System.out.println("Sockets Thread - IOException : " + e.toString());
 			} catch (ClassNotFoundException e) {
 				System.out.println("Sockets Thread - ClassNotFoundException : " + e.toString());
-			} catch (SQLException e) {
-				System.out.println("Sockets Thread - SQL Exception : " + e.toString());
-			} catch (CRRSException e) {
-				System.out.println("Sockets Thread - Bean Error : " + e.toString());
-			}
+			} 
+
 		}
 
 
