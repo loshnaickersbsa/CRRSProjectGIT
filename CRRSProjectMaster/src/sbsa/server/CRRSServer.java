@@ -120,7 +120,7 @@ public class CRRSServer {
 						out.writeObject(dao.getAllRooms());
 						break;
 					case "findRooms" :
-						out.writeObject(dao.findRooms((ArrayList<Equipment>)in.readObject(),(Date)in.readObject(),(Date)in.readObject(),(Building)in.readObject()));
+						out.writeObject(dao.findRooms((ArrayList<Equipment>)in.readObject(),(Date)in.readObject(),(Date)in.readObject(), in.readInt(), (Building)in.readObject()));
 						break;
 					case "addBuilding" :
 						out.writeObject(dao.addBuilding((Building)in.readObject()));

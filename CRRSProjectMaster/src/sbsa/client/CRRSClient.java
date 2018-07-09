@@ -169,7 +169,7 @@ public class CRRSClient implements CRRSInterface {
 	}
 
 	@Override
-	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, Building building) {
+	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, int duration, Building building) {
 		try {
 			out.writeObject("findRooms");
 			out.flush();
