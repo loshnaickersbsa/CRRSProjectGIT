@@ -13,7 +13,7 @@ import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+
 import javax.swing.GroupLayout.*;
 import javax.swing.LayoutStyle.*;
 import org.jdatepicker.*;
@@ -178,6 +178,9 @@ public class PnlReports extends JPanel implements ActionListener {
 	private void initEvents() {
 		btnGenerateReport.addActionListener(this);
 		btnPrintReport.addActionListener(this);
+		cboReports.addActionListener(this);
+		fromDatePicker.addActionListener(this);
+		toDatePicker.addActionListener(this);
 	}
 
 	private void generateReport() {
@@ -202,13 +205,16 @@ public class PnlReports extends JPanel implements ActionListener {
 		if (source == btnGenerateReport) {
 			generateReport();
 			btnPrintReport.setEnabled(true);
-		} if (source == btnPrintReport) {
+		} else if (source == btnPrintReport) {
 			MessageFormat footer = new MessageFormat("Page {0,number,integer}");
 			try {
 				txtPreview.print(null, footer);
 			} catch (PrinterException ex) {
 				ex.printStackTrace();
 			}
+		} else {
+			txtPreview.setText("");
+			btnPrintReport.setEnabled(false);
 		}
 
 	}
@@ -242,9 +248,6 @@ public class PnlReports extends JPanel implements ActionListener {
 
 		String  cancellations= String.valueOf(client.getReportCancellations(fromD, toD));
 
-
-
-		//String cancellations = "20" ;  //TODO Get this from the DAO;
 
 		strHTML ="<HTML><HEAD>";
 		strHTML +="<STYLE>";
@@ -503,16 +506,28 @@ public class PnlReports extends JPanel implements ActionListener {
 
 		filepath = "file:/" + filepath.replace('\\', '/');
 
-
-
-
 		String fromDate = fromDatePicker.getModel().getValue().toString();
 		String toDate = toDatePicker.getModel().getValue().toString();
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		Date fromD = new Date();
+		Date toD = new Date();
+
+		try {
+			fromD = format.parse(fromDate);
+			toD = format.parse(toDate);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		ArrayList<Reservation> waiting = client.findWaitingReservations(fromD, toD);
+
+
 
 
 		strHTML ="<HTML><HEAD>";
 		strHTML +="<STYLE>";
-		strHTML +="Body {font-size: 12px;}";
+		strHTML +="Body {font-size: 10px;}";
 		strHTML +="H1 {text-decoration: underline; font-size: 16px;}";
 		strHTML +="table {font-family: arial, sans-serif;border-collapse: collapse; font-size: 12px;}";
 		strHTML +=".table100 {width: 90%; border-width: 3px; border-style: solid; margin-left:auto;  margin-right:auto;}";
@@ -530,7 +545,9 @@ public class PnlReports extends JPanel implements ActionListener {
 		strHTML +="<br>";
 		strHTML +="<br>";
 		strHTML +="<p style='text-align: center;'><font style='Font-weight: bold;'>Report Description: </font>All users added to a waiting list.<br>";
-		strHTML +="<br></p>";
+		strHTML +="<br>";
+		strHTML +="<font style='Font-weight: bold;'>From Date: </font>" + fromDate + "<br>";
+		strHTML +="<font style='Font-weight: bold;'>To Date: </font>" + toDate + "<br></p>";
 		strHTML +="<br>";
 		strHTML +="<table class='.table100' align=Center>";
 		strHTML +="	<tr>";
@@ -545,20 +562,29 @@ public class PnlReports extends JPanel implements ActionListener {
 		strHTML +="		</th><th>";
 		strHTML +="			Equipment";
 		strHTML +="		</th>";
-		strHTML +="	</tr><tr>";
-		strHTML +="		<td>";
-		strHTML +="			Frikkie Geldenhuis";
-		strHTML +="		</td><td>";
-		strHTML +="			5 Simmonds - Zebra";
-		strHTML +="		</td><td>";
-		strHTML +="			2018-07-11 08:00";
-		strHTML +="		</td><td>";
-		strHTML +="			2018-07-11 08:00";
-		strHTML +="		</td><td>";
-		strHTML +="			Whiteboard (3)<br>";
-		strHTML +="			Projector (1)<br>";
-		strHTML +="		</td>";
 		strHTML +="	</tr>";
+		for (int pos = 0 ; pos < waiting.size(); pos++) {
+			strHTML +="	<<tr>";
+			strHTML +="		<td>";
+			strHTML +="			" + waiting.get(pos).getUser().getName();
+			strHTML +="		</td><td>";
+			strHTML +="			" + waiting.get(pos).getRoom().getBuilding().getBuildingName() + " - " + waiting.get(pos).getRoom().getRoomLocation() ;
+			strHTML +="		</td><td>";
+			strHTML +="			" + waiting.get(pos).getMeetingStart();
+			strHTML +="		</td><td>";
+			strHTML +="			" + waiting.get(pos).getMeetingEnd();
+			strHTML +="		</td><td>";
+			if (waiting.get(pos).getEquipment() != null ) {
+				for (int count = 0 ; count < waiting.get(pos).getEquipment().size(); count++) {
+					strHTML += waiting.get(pos).getEquipment().get(count).getEquipmentDesc() + " (";
+					strHTML += waiting.get(pos).getEquipment().get(count).getQty() + ")<br>";
+				}
+			} else {
+				strHTML+= "None";
+			}
+			strHTML +="		</td>";
+			strHTML +="	</tr>";
+		}
 		strHTML +="</table>";
 		strHTML +="<br>";
 		strHTML +="<br>";
@@ -567,4 +593,22 @@ public class PnlReports extends JPanel implements ActionListener {
 
 		txtPreview.setText(strHTML);
 	}
+	
+	 private String resolveDate(Date d) {
+	        Calendar cal = Calendar.getInstance();
+	        cal.setTime(d);
+	        String outDate = String.valueOf(cal.get(Calendar.YEAR)) + "-";
+	        if ((cal.get(Calendar.MONTH)) < 10 ) {
+	               outDate += "0" + (cal.get(Calendar.MONTH)) + "-";
+	        } else {
+	               outDate +=  (cal.get(Calendar.MONTH)) + "-";
+	        }
+
+	        if (cal.get(Calendar.DAY_OF_MONTH) < 10 ) {
+	               outDate += "0" + cal.get(Calendar.DAY_OF_MONTH);
+	        } else {
+	               outDate +=  cal.get(Calendar.DAY_OF_MONTH) ;
+	        }
+	        return outDate;
+	 }
 }

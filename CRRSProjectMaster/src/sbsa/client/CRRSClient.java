@@ -103,7 +103,7 @@ public class CRRSClient implements CRRSInterface {
 	@Override
 	public ArrayList<Equipment> findEquipment(String description) {
 		try {
-			out.writeObject("getAllEquipment");
+			out.writeObject("findEquipment");
 			out.flush();
 			out.writeObject(description);
 			out.flush();
@@ -169,7 +169,8 @@ public class CRRSClient implements CRRSInterface {
 	}
 
 	@Override
-	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, Building building) {
+
+	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, int duration, Building building) {
 		try {
 			out.writeObject("findRooms");
 			out.flush();
@@ -178,6 +179,8 @@ public class CRRSClient implements CRRSInterface {
 			out.writeObject(startDate);
 			out.flush();
 			out.writeObject(endDate);
+			out.flush();
+			out.writeObject(String.valueOf(duration));
 			out.flush();
 			out.writeObject(building);
 			out.flush();
@@ -481,5 +484,23 @@ public class CRRSClient implements CRRSInterface {
 			return null;
 		}
 	}
+	
+	public ArrayList<Reservation> findWaitingReservations(Date startDate, Date endDate) {
+		try {
+			out.writeObject("findWaitingReservations");
+			out.flush();
+
+			out.writeObject(startDate);
+			out.flush();
+			out.writeObject(endDate);
+			out.flush();
+		
+			return (ArrayList<Reservation>)in.readObject();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+
 
 }

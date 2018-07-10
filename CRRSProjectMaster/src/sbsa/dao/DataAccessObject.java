@@ -9,7 +9,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -19,6 +21,7 @@ import sbsa.beans.Building;
 import sbsa.beans.Equipment;
 import sbsa.beans.Reservation;
 import sbsa.beans.Room;
+import sbsa.beans.RoomOccupation;
 import sbsa.beans.Status;
 import sbsa.beans.User;
 import sbsa.exceptions.CRRSException;
@@ -326,9 +329,112 @@ public class DataAccessObject implements CRRSInterface {
 	}
 
 	@Override
-	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, Building building) {
-		// TODO Auto-generated method stub
-		return null;
+	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, int duration,
+			Building building) throws SQLException, CRRSException {
+		String start = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(startDate);
+		String end = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endDate);
+		System.out.println("startDate = " + start);
+		System.out.println("endDate = " + end);
+		String DROPOPENTIME = "DROP TEMPORARY TABLE opentime;";
+		String DROPOPENTIME1 = "DROP TEMPORARY TABLE opentime1;";
+		String DROPOPENTIME2 = "DROP TEMPORARY TABLE opentime2;";
+		String CREATEOPENTIME = "CREATE TEMPORARY TABLE opentime "
+				+ "(RoomID int, FreeFrom DATETIME, FreeUntil DATETIME);";
+		String CREATEOPENTIME1 = "CREATE TEMPORARY TABLE opentime1 "
+				+ "(RoomID int, FreeFrom DATETIME, FreeUntil DATETIME);";
+		String CREATEOPENTIME2 = "CREATE TEMPORARY TABLE opentime2 "
+				+ "(RoomID int, FreeFrom DATETIME, FreeUntil DATETIME);";
+		String INSERTOPENTIME1 = "INSERT INTO opentime1 (RoomID, FreeFrom) SELECT roomid, ? " + "FROM rooms;";
+		String INSERTOPENTIME2 = "INSERT INTO opentime2 (RoomID, FreeFrom) "
+				+ "SELECT reservations.RoomID, MeetingEnd FROM reservations, opentime1 "
+				+ "WHERE opentime1.RoomID = reservations.RoomID " + "AND ((MeetingStart > ?  AND MeetingStart < ?) "
+				+ "OR (MeetingEnd > ? AND MeetingEnd < ?) " + "OR (MeetingStart < ? and MeetingEnd > ?));";
+		String SELECTOPENTIME1 = "SELECT DISTINCT reservations.roomid, MeetingStart " + "FROM reservations, opentime "
+				+ "WHERE opentime.RoomID = reservations.RoomID " + "AND MeetingStart > opentime.FreeFrom "
+				+ "ORDER BY roomid, meetingstart;";
+		String MERGEROWS = "INSERT INTO opentime (RoomID, FreeFrom) " + "Select RoomID, FreeFrom FROM opentime1 "
+				+ "UNION " + "Select RoomID, FreeFrom FROM opentime2;";
+		String UPDATEOPENTIME1 = "UPDATE opentime " + "SET FreeUntil = ? " + "WHERE opentime.RoomID = ? "
+				+ "AND opentime.FreeFrom < ? " + "AND opentime.FreeUntil IS NULL;";
+		String UPDATEOPENTIME2 = "UPDATE opentime SET FreeUntil = ? WHERE FreeUntil IS NULL;";
+		String DELETEOPENTIME1 = "DELETE FROM opentime WHERE roomid IN " + "(SELECT roomid FROM reservations "
+				+ "WHERE meetingstart < ? " + "AND meetingend > ?);";
+		String DELETEOPENTIME2 = "DELETE FROM opentime WHERE (SELECT TIMESTAMPDIFF(MINUTE, FreeFrom, FreeUntil) < ?);";
+		String DELETEOPENTIME3 = "DELETE FROM opentime WHERE RoomID NOT IN (Select RoomID FROM rooms WHERE BuildingID = ?);";
+		String FINDROOMS = "SELECT r.RoomID, r.RoomLocation, r.Seats, r.BuildingID, b.BuildingName, ot.FreeFrom, ot.FreeUntil "
+				+ "FROM opentime AS ot INNER JOIN rooms AS r INNER JOIN buildings AS b "
+				+ "ON (ot.RoomID = r.RoomID AND r.BuildingID = b.BuildingID) " + "ORDER BY r.RoomID, ot.FreeFrom;";
+
+		int r = 0;
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement(DROPOPENTIME);
+			r = ps.executeUpdate();
+		} catch (SQLException e) {
+		}
+		try {
+			ps = con.prepareStatement(DROPOPENTIME1);
+			r = ps.executeUpdate();
+		} catch (SQLException e) {
+		}
+		try {
+			ps = con.prepareStatement(DROPOPENTIME2);
+			r = ps.executeUpdate();
+		} catch (SQLException e) {
+		}
+		ps = con.prepareStatement(CREATEOPENTIME);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(CREATEOPENTIME1);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(CREATEOPENTIME2);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(INSERTOPENTIME1);
+		ps.setString(1, start);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(INSERTOPENTIME2);
+		ps.setString(1, start);
+		ps.setString(3, start);
+		ps.setString(5, start);
+		ps.setString(2, end);
+		ps.setString(4, end);
+		ps.setString(6, end);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(MERGEROWS);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(SELECTOPENTIME1);
+		ResultSet rs = ps.executeQuery();
+		ps = con.prepareStatement(UPDATEOPENTIME1);
+		while (rs.next()) {
+			Date dt = rs.getTimestamp("meetingstart");
+			String ms = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dt);
+			ps.setString(1, ms);
+			ps.setInt(2, rs.getInt("RoomID"));
+			ps.setString(3, ms);
+			r = ps.executeUpdate();
+		}
+		ps = con.prepareStatement(UPDATEOPENTIME2);
+		ps.setString(1, end);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(DELETEOPENTIME1);
+		ps.setString(1, start);
+		ps.setString(2, end);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(DELETEOPENTIME2);
+		ps.setInt(1, duration);
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(DELETEOPENTIME3);
+		ps.setInt(1, building.getBuildingID());
+		r = ps.executeUpdate();
+		ps = con.prepareStatement(FINDROOMS);
+		rs = ps.executeQuery();
+		ArrayList<Room> rooms = roomArrayList(rs);
+		rs.beforeFirst();
+		for (Room room : rooms) {
+			rs.next();
+			room.setFreeFrom(rs.getTimestamp("FreeFrom"));
+			room.setFreeUntil(rs.getTimestamp("FreeUntil"));
+		}
+		return rooms;
 	}
 
 	public ArrayList<Room> roomArrayList(ResultSet resultSet) throws CRRSException, SQLException {
@@ -679,8 +785,9 @@ public class DataAccessObject implements CRRSInterface {
 	}
 
 	public ArrayList<Equipment> getReservationEquipment(int reservationID) throws SQLException, CRRSException {
-		String RESERVATIONEQUIPMENT = "SELECT EquipmentID, EquipmentDesc, qty "
-				+ "FROM equipment AS e, INNER JOIN reservationequipment AS re" + " ON (e.equipmentID = re.equipmentID)"
+		String RESERVATIONEQUIPMENT = "SELECT e.EquipmentID, EquipmentDesc, qty"
+				+ " FROM equipment AS e INNER JOIN reservationequipment AS re" 
+				+ " ON (e.equipmentID = re.equipmentID)"
 				+ " WHERE re.reservationID = ?;";
 		PreparedStatement ps = con.prepareStatement(RESERVATIONEQUIPMENT);
 		ps.setInt(1, reservationID);
@@ -729,4 +836,141 @@ public class DataAccessObject implements CRRSInterface {
 		ResultSet rs = ps.executeQuery();
 		return reservationArrayList(rs);
 	}
+	
+	public int getReportCancellations(Date startDate, Date endDate) {
+
+        String GETCANCELLATIONS = "Select count(*) as Cancelled from reservations " 
+                     + "where StatusID in (Select StatusID from Status where StatusDesc = 'Cancelled')"
+                     + "and Meetingstart > ? and MeetingStart < ? ;";
+        
+        String fromDate = resolveDate(startDate);
+        String toDate =resolveDate(endDate);
+        
+
+        try {
+               PreparedStatement ps = con.prepareStatement(GETCANCELLATIONS);
+               ps.setString(1, fromDate);
+               ps.setString(2, toDate);
+               ResultSet rs = ps.executeQuery();
+               rs.next();
+               int retInt = rs.getInt("Cancelled");
+               return retInt;
+        } catch (SQLException e) {
+               System.out.println("SQL Error" + e.getMessage());
+               return 0;
+        }
+ }
+ 
+ private String resolveDate(Date d) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(d);
+        String outDate = String.valueOf(cal.get(Calendar.YEAR)) + "-";
+        if ((cal.get(Calendar.MONTH)+1) < 10 ) {
+               outDate += "0" + (cal.get(Calendar.MONTH)+1) + "-";
+        } else {
+               outDate +=  (cal.get(Calendar.MONTH)+1) + "-";
+        }
+
+        if (cal.get(Calendar.DAY_OF_MONTH) < 10 ) {
+               outDate += "0" + cal.get(Calendar.DAY_OF_MONTH);
+        } else {
+               outDate +=  cal.get(Calendar.DAY_OF_MONTH) ;
+        }
+        return outDate;
+ }
+
+ public ArrayList<RoomOccupation> getReportRoomOccupation(Date startDate, Date endDate ) {
+     String GETCANCELLATIONS = "Select b1.BuildingName, room1.RoomLocation, Round((sum(TIMESTAMPDIFF(minute,MeetingStart,MeetingEnd)) / TIMESTAMPDIFF(minute,?,?)*100),2) Occupation from Rooms room1"
+                  + " left outer join Reservations res1 on res1.RoomID = room1.RoomID"
+                  + " left outer join Buildings b1 on b1.BuildingID = room1.BuildingID"
+                  + " where MeetingStart >= ? and MeetingEnd <= ?"
+                  + " group by b1.BuildingName,room1.RoomLocation"
+                  + " order by Occupation desc;";
+
+     String fromDate = resolveDate(startDate);
+     String toDate =resolveDate(endDate);
+
+     try {
+            PreparedStatement ps = con.prepareStatement(GETCANCELLATIONS);
+            ps.setString(1, fromDate);
+            ps.setString(2, toDate);
+            ps.setString(3, fromDate);
+            ps.setString(4, toDate);
+            ResultSet rs = ps.executeQuery();
+            ArrayList<RoomOccupation> roArrayList = new ArrayList<RoomOccupation>();
+            while (rs.next()) {
+                  RoomOccupation ro = new RoomOccupation(rs.getString("BuildingName"), rs.getString("RoomLocation"), rs.getString("Occupation"));
+                  roArrayList.add(ro);
+            }
+            return roArrayList;
+     } catch (SQLException e) {
+            System.out.println("SQL Error" + e.getMessage());
+            return null;
+     }
+ }
+ 
+ public ArrayList<Equipment> getReportEquipment(Date startDate, Date endDate ) {
+        String GETCANCELLATIONS = "Select e.EquipmentDesc, count(ree.ReservationID) as count from Equipment e " 
+                     + "left outer join ReservationEquipment ree on ree.EquipmentID = e.EquipmentID "
+                     + "left outer join Reservations r on ree.ReservationID = r.ReservationID "
+                     + "where r.MeetingStart >= ? and r.MeetingStart <= ? "
+                     + " group by e.EquipmentDesc "
+                     + "having count > 0;";
+
+        String fromDate = resolveDate(startDate);
+        String toDate =resolveDate(endDate);
+
+        try {
+               PreparedStatement ps = con.prepareStatement(GETCANCELLATIONS);
+               ps.setString(1, fromDate);
+               ps.setString(2, toDate);
+
+               ResultSet rs = ps.executeQuery();
+               ArrayList<Equipment> eArrayList = new ArrayList<Equipment>();
+               while (rs.next()) {
+                     try {
+                            Equipment eq = new Equipment(1, rs.getString("EquipmentDesc"), rs.getInt("Count"));
+                            eArrayList.add(eq);
+                     } catch (CRRSException e) {
+
+                     }
+               }
+               return eArrayList;
+        } catch (SQLException e) {
+               System.out.println("SQL Error" + e.getMessage());
+               return null;
+        }
+ }
+ 
+
+	public ArrayList<Reservation> findWaitingReservations(Date startDate, Date endDate) throws SQLException, CRRSException {
+		String FINDRESERVATIONS = "SELECT r.ReservationID, r.MeetingTitle, r.Attendees, r.BookingDate, r.MeetingStart, "
+				+ "r.MeetingEnd, r.StatusID, r.UserID, r.RoomID, NotifyDate, StatusDesc, name, password, Telephone, "
+				+ "Title, email, Department, Admin, Exco, RoomLocation, Seats, rm.BuildingID, BuildingName "
+				+ "FROM reservations AS r INNER JOIN status AS s INNER JOIN rooms AS rm INNER JOIN buildings AS b "
+				+ "INNER JOIN users AS u "
+				+ "ON (r.StatusID = s.StatusID AND r.roomID = rm.roomID AND rm.buildingID = b.buildingID AND r.UserID = u.USERID) "
+				+ "WHERE ((meetingStart BETWEEN ? AND ?) OR (meetingEnd BETWEEN ? AND ?)) "
+				+ "AND  s.StatusID = 3";
+		PreparedStatement ps = con.prepareStatement(FINDRESERVATIONS);
+		ps.setString(1, resolveDate(startDate));
+		ps.setString(2, resolveDate(endDate));
+		ps.setString(3, resolveDate(startDate));
+		ps.setString(4, resolveDate(endDate));
+		ResultSet rs = ps.executeQuery();
+		ArrayList<Reservation> resList = new ArrayList<Reservation>();
+		
+		while (rs.next()) {
+			Status status = new Status(rs.getInt("StatusID"), rs.getString("StatusDesc"));
+			User user = new User(rs.getString("UserID"), rs.getString("name"), rs.getString("password"), rs.getString("telephone"), rs.getString("title"), rs.getString("department"), rs.getString("email"), rs.getBoolean("admin"), rs.getBoolean("exco"));
+			Building building = new Building(rs.getInt("BuildingID"),rs.getString("BuildingName"));
+			Room room = new Room(rs.getInt("roomID"), rs.getString("RoomLocation"), rs.getInt("Seats"), building, null);
+			ArrayList<Equipment> equipment = getReservationEquipment(rs.getInt("ReservationID"));
+			Reservation reservation = new Reservation(rs.getInt("reservationID"), rs.getString("MeetingTitle"), rs.getInt("Attendees"), rs.getDate("BookingDate"), rs.getDate("meetingStart"), rs.getDate("meetingEnd"), status, user, room, equipment, rs.getDate("notifyDate"));
+			resList.add(reservation);
+			
+		}
+		return resList;
+	}
+
 }

@@ -3,7 +3,11 @@ package sbsa.server;
 
 import java.util.*;
 
-import sbsa.beans.*;
+import sbsa.beans.Building;
+import sbsa.beans.Equipment;
+import sbsa.beans.Reservation;
+import sbsa.beans.Room;
+import sbsa.beans.User;
 import sbsa.dao.DataAccessObject;
 import sbsa.exceptions.CRRSException;
 
@@ -120,7 +124,7 @@ public class CRRSServer {
 						out.writeObject(dao.getAllRooms());
 						break;
 					case "findRooms" :
-						out.writeObject(dao.findRooms((ArrayList<Equipment>)in.readObject(),(Date)in.readObject(),(Date)in.readObject(),(Building)in.readObject()));
+						out.writeObject(dao.findRooms((ArrayList<Equipment>)in.readObject(),(Date)in.readObject(),(Date)in.readObject(),Integer.parseInt((String)in.readObject()),(Building)in.readObject()));
 						break;
 					case "addBuilding" :
 						out.writeObject(dao.addBuilding((Building)in.readObject()));
@@ -191,7 +195,9 @@ public class CRRSServer {
 					case "getReportEquipment" :
 						out.writeObject(dao.getReportEquipment((Date)in.readObject(), (Date)in.readObject()));
 						break;	
-						
+					case "findWaitingReservations" :
+						out.writeObject(dao.findWaitingReservations((Date)in.readObject(), (Date)in.readObject()));
+						break;
 					default :
 						System.out.println("Invalid request : " + strInput);
 						break;
