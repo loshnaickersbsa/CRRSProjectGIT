@@ -92,9 +92,10 @@ Insert into RoomEquipment(RoomID, EquipmentID,qty) values (15,21,1);
 
             
 Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('General Meeting',5,'2018-07-02 09:00','2018-07-06 09:00','2018-07-06 11:00',1,'T002',1,null);
-Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('General Meeting',3,'2018-07-03 11:20','2018-07-06 12:00','2018-07-06 13:00',1,'T002',2,null);
-Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('General Meeting',7,'2018-07-04 14:00','2018-07-06 10:00','2018-07-06 15:00',2,'E001',16,null);
-Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('General Meeting',15,'2018-07-05 15:43','2018-07-09 11:00','2018-07-10 17:00',1,'E001',15,null);
+Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('Finding a Solution',3,'2018-07-03 11:20','2018-07-06 12:00','2018-07-06 13:00',1,'T002',2,null);
+Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('Secret Meeting',7,'2018-07-04 14:00','2018-07-06 10:00','2018-07-06 15:00',2,'E001',16,null);
+Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('Important Meeting',15,'2018-07-05 15:43','2018-07-09 11:00','2018-07-10 17:00',1,'E001',15,null);
+Insert Into Reservations(MeetingTitle,Attendees,BookingDate,MeetingStart,MeetingEnd,StatusID,UserID,RoomID,notifydate) values ('Exco Meeting',15,'2018-07-08 15:43','2018-07-11 08:00','2018-07-11 09:00',1,'E001',15,null);
 
 Insert Into ReservationEquipment(ReservationID,EquipmentID,qty) values (1,3,1);
 Insert Into ReservationEquipment(ReservationID,EquipmentID,qty) values (4,4,2);
