@@ -11,17 +11,26 @@ import java.awt.Color;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.table.DefaultTableModel;
+
+import sbsa.beans.Equipment;
+import sbsa.client.CRRSClient;
+import sbsa.exceptions.CRRSException;
+
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import javax.swing.JTextPane;
 import java.awt.Font;
 
 //
-public class PnlEquipment extends JPanel {
+public class PnlEquipment extends JPanel implements ActionListener{
 	/**
 	 * 
 	 */
@@ -36,6 +45,8 @@ public class PnlEquipment extends JPanel {
 	private JPanel pnlEquipmentList;
 	private JScrollPane scrPaneForTable;
 	private JTextField textField;
+	CRRSClient client;
+	MainFrame mainFrame;
 
 	/**
 	 * Create the panel.
@@ -43,6 +54,8 @@ public class PnlEquipment extends JPanel {
 	public PnlEquipment() {
 		pnlGUI();
 		pnlListeners();
+
+		
 	}
 
 	private void pnlListeners() {
@@ -66,13 +79,17 @@ public class PnlEquipment extends JPanel {
 		
 		btnAdd = new JButton("Add");
 		btnAdd.setAlignmentX(1.0f);
+		btnAdd.addActionListener(this);
 		
 		btnUpdate = new JButton("Update");
 		btnUpdate.setPreferredSize(new Dimension(120, 25));
 		btnUpdate.setAlignmentX(1.0f);
+		btnUpdate.addActionListener(this);
 		
 		btnDelete = new JButton("Delete");
 		btnDelete.setAlignmentX(1.0f);
+		btnDelete.addActionListener(this);
+		
 		GroupLayout gl_panel_1 = new GroupLayout(pnlDetailedInfo);
 		gl_panel_1.setHorizontalGroup(
 			gl_panel_1.createParallelGroup(Alignment.TRAILING)
@@ -203,5 +220,64 @@ public class PnlEquipment extends JPanel {
 
 		
 		
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		Object source = e.getSource();
+		
+		if(source == btnAdd)
+		{
+			try {
+				Equipment equipmentAdd = null;//new Equipment();
+				client = new CRRSClient();
+				equipmentAdd.setEquipmentDesc(txtDesc.getText());
+				MainFrame.client.addEquipment(equipmentAdd);
+			} 
+			catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} 
+			catch (CRRSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		if(source == btnUpdate)
+		{
+			try {
+				Equipment equipmentUpdate = null;// = new Equipment();
+				client = new CRRSClient();
+				equipmentUpdate.setEquipmentDesc(txtDesc.getText());
+				MainFrame.client.editEquipment(equipmentUpdate);
+			} 
+			catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} 
+			catch (CRRSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		if(source == btnDelete)
+		{
+			try {
+				Equipment equipmentDel = null;// = new Equipment();
+				client = new CRRSClient();
+				equipmentDel.setEquipmentDesc(txtDesc.getText());
+				MainFrame.client.deleteEquipment(equipmentDel);
+			} 
+			catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} 
+			catch (CRRSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
 	}
 }
