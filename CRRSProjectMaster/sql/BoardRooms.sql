@@ -7,13 +7,15 @@ use BoardRooms;
 commit;
 create Table Buildings (
 			BuildingID int unsigned not null primary key Auto_Increment,
-            BuildingName varchar(50) not null);
+            BuildingName varchar(50) not null unique,
+            Deleted boolean default false);
 commit;
 Create Table Rooms (
 			RoomID int unsigned not null Primary Key Auto_Increment,
-            RoomLocation varchar(100) not null,
+            RoomLocation varchar(100) not null unique,
             Seats int not null,
-            BuildingID int not null);
+            BuildingID int not null,
+            Deleted boolean default false);
 commit;
 Create Table RoomEquipment (
 			RoomID int unsigned not null,
@@ -29,7 +31,8 @@ Create Table ReservationEquipment (
 commit;
 Create Table Status (
 			StatusID int unsigned not null Primary Key auto_increment,
-            StatusDesc varchar(20) not null);
+            StatusDesc varchar(20) not null unique,
+            Deleted boolean default false);
 commit;
 Create Table Reservations (
 			ReservationID int unsigned not null Primary Key auto_increment,
@@ -45,15 +48,17 @@ Create Table Reservations (
 commit;
 Create Table Equipment (
 			EquipmentID int unsigned not null Primary Key auto_increment,
-            EquipmentDesc varchar(100) not null);
+            EquipmentDesc varchar(100) not null unique,
+            Deleted boolean default false);
 commit;
 Create Table Users (
-		UserID char(4) not null Primary Key,
-		name varchar(50) not null,
-		password varchar(50) not null,
-		Telephone varchar(15) not null,
-		Title varchar(50) not null,
-		email varchar(100) not null,
-		Department varchar(50) not null,
-        Admin bool not null,
-		Exco bool default false);
+			UserID char(4) not null Primary Key,
+			name varchar(50) not null,
+			password varchar(50) not null,
+			Telephone varchar(15) not null,
+			Title varchar(50) not null,
+			email varchar(100) not null,
+			Department varchar(50) not null,
+			Admin bool not null,
+			Exco bool default false,
+			Deleted boolean default false);

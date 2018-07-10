@@ -22,7 +22,7 @@ public interface CRRSInterface {
 	public Room editRoom(Room room) throws SQLException;
 	public Room deleteRoom(Room room) throws SQLException;
 	public ArrayList<Room> getAllRooms() throws SQLException, CRRSException;
-	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, Building building);
+	public ArrayList<Room> findRooms(ArrayList<Equipment> equipment, Date startDate, Date endDate, int duration, Building building) throws SQLException, CRRSException;
 	public Building addBuilding(Building building) throws SQLException;
 	public Building editBuilding(Building building) throws SQLException;
 	public Building deleteBuilding(Building building) throws SQLException;
